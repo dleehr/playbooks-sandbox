@@ -1,0 +1,10 @@
+---
+- name: Sleep forever
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Sleep
+      ansible.builtin.shell:
+        cmd: sleep 3d
