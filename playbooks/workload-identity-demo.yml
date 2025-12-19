@@ -31,7 +31,7 @@
 
     - name: Read secret from allowed path (should succeed)
       ansible.builtin.uri:
-        url: "{{ vault_addr }}/v1/secret/Demo Project/simple-secret"
+        url: "{{ vault_addr }}/v1/secret/OIDC Demo Project/simple-secret"
         method: GET
         headers:
           X-Vault-Token: "{{ vault_token }}"
@@ -44,7 +44,7 @@
 
     - name: Attempt to read secret from unauthorized path (should fail)
       ansible.builtin.uri:
-        url: "{{ vault_addr }}/v1/secret/data/Insecure Project/simple-secret"
+        url: "{{ vault_addr }}/v1/secret/data/Demo Project/simple-secret"
         method: GET
         headers:
           X-Vault-Token: "{{ vault_token }}"
