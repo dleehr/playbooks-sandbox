@@ -1,0 +1,10 @@
+---
+- name: Workload Identity Demo
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: Check JWT
+      ansible.builtin.debug:
+        msg: Workload identity running with JWT {{ lookup('ansible.builtin.env', 'WORKLOAD_IDENTITY_TOKEN')}}
