@@ -4,7 +4,67 @@
   gather_facts: false
   connection: local
 
+  vars:
+    vault_addr: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') }}"
+    vault_role: "aap-oidc-demo-role"
+    vault_jwt: "{{ lookup('ansible.builtin.env', 'WORKLOAD_IDENTITY_TOKEN') }}"
+
   tasks:
     - name: Check JWT
       ansible.builtin.debug:
-        msg: Workload identity running with JWT {{ lookup('ansible.builtin.env', 'WORKLOAD_IDENTITY_TOKEN')}}
+        msg: Workload identity running with JWT {{ vault_jwt }}
+
+    - name: Authenticate to Vault with JWT
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/jwt/login"
+        method: POST
+        body_format: json
+        body:
+          role: "{{ vault_role }}"
+          jwt: "{{ vault_jwt }}"
+        status_code: 200
+      register: vault_auth_response
+
+    - name: Set Vault token
+      ansible.builtin.set_fact:
+        vault_token: "{{ vault_auth_response.json.auth.client_token }}"
+
+    - name: Read secret from allowed path (should succeed)
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/secret/Demo Project/simple-secret"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: 200
+      register: allowed_secret
+
+    - name: Display allowed secret
+      ansible.builtin.debug:
+        msg: "Successfully read secret: {{ allowed_secret.json.data }}"
+
+    - name: Attempt to read secret from unauthorized path (should fail)
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/secret/data/Insecure Project/simple-secret"
+        method: GET
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: 200
+      register: unauthorized_secret
+      ignore_errors: true
+
+    - name: Show unauthorized access result
+      ansible.builtin.debug:
+        msg: "{{ 'UNEXPECTED: Successfully read unauthorized secret!' if unauthorized_secret is succeeded else 'EXPECTED: Access denied to unauthorized secret (status: ' ~ unauthorized_secret.status ~ ')' }}"
+
+    - name: Revoke Vault token
+      ansible.builtin.uri:
+        url: "{{ vault_addr }}/v1/auth/token/revoke-self"
+        method: POST
+        headers:
+          X-Vault-Token: "{{ vault_token }}"
+        status_code: 204
+      register: revoke_response
+
+    - name: Confirm token revocation
+      ansible.builtin.debug:
+        msg: "Vault token successfully revoked"
