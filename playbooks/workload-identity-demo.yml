@@ -8,6 +8,9 @@
     vault_addr: "{{ lookup('ansible.builtin.env', 'VAULT_ADDR') }}"
     vault_role: "aap-oidc-demo-role"
     vault_jwt: "{{ lookup('ansible.builtin.env', 'WORKLOAD_IDENTITY_TOKEN') }}"
+  module_defaults:
+    ansible.builtin.uri:
+      validate_certs: false # Just for my internal dev vault server
 
   tasks:
     - name: Check JWT
